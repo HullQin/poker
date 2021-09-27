@@ -16,7 +16,7 @@
 
 #message > div {
   padding: 6px;
-  transition: margin-top .5s ease-in-out;
+  transition: margin-top .5s linear;
 }
 
 #message > div > div {
