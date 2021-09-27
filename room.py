@@ -1,10 +1,5 @@
-from daphne.ws_protocol import WebSocketProtocol
-from daphne.server import Server
-from functools import partial
-
-
 class User:
-    def __init__(self, id: str, send: partial[Server.handle_reply, WebSocketProtocol], seat=None, room=None):
+    def __init__(self, id, send, seat=None, room=None):
         self.id = id
         self.send = send
         self.online = True

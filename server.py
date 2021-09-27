@@ -1,12 +1,8 @@
 from _weakrefset import WeakSet
 
-from constant import DataType
 from error import *
 from room import Room, User
-from daphne.server import Server
-from daphne.ws_protocol import WebSocketProtocol
-from asyncio import Queue, QueueEmpty
-from functools import partial
+from asyncio import QueueEmpty
 import json
 import os
 
@@ -110,14 +106,38 @@ handler = {
 }
 
 memory_leak_detector = WeakSet()
+files = {}
+STATIC = os.path.join(os.path.dirname(__file__), 'static')
+with open(os.path.join(STATIC, 'index.html'), 'rb') as fp:
+    html = fp.read()
 
 
-async def application(scope, receive: Queue.get, send: partial[Server.handle_reply, WebSocketProtocol]):
+async def application(scope, receive, send):
     if scope['type'] != 'websocket':
-        request = await receive()
-        if request['type'] == 'http.request':
-            await send({'type': 'http.response.start', 'status': 200})
-            await send({'type': 'http.response.body', 'body': html})
+        if scope['type'] == 'http':
+            if scope['method'] == 'GET':
+                if scope['path'].startswith('/static/'):
+                    path = scope['path'][8:]
+                    if path in files:
+                        body = files[path]
+                    else:
+                        filepath = os.path.join(STATIC, path)
+                        if os.path.isfile(filepath):
+                            with open(filepath, 'rb') as fp:
+                                files[path] = fp.read()
+                            body = files[path]
+                        else:
+                            body = None
+                    if body is not None:
+                        await send({'type': 'http.response.start', 'status': 200})
+                        await send({'type': 'http.response.body', 'body': body})
+                    else:
+                        send.args[0].basic_error(404, b'Not Found', 'Not Found')
+                else:
+                    await send({'type': 'http.response.start', 'status': 200})
+                    await send({'type': 'http.response.body', 'body': html})
+            else:
+                send.args[0].basic_error(405, b'Method Not Allowed', 'Method Not Allowed')
         return
 
     # 首个建立连接的请求
@@ -138,7 +158,3 @@ async def application(scope, receive: Queue.get, send: partial[Server.handle_rep
     finally:
         if user is not None:
             await user.set_online(False)
-
-
-with open(os.path.join(os.path.dirname(__file__), 'static', 'index.html'), 'rb') as fp:
-    html = fp.read()
