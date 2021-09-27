@@ -153,8 +153,8 @@ async def application(scope, receive, send):
                 await handler[data['type']](data, user, room)
     except ActiveDisconnectionError as e:
         await close_websocket(send, e.args[0])
+        if user is not None and e.args[0] != 3200:
+            await user.set_online(False)
     except PassiveDisconnectionError:
-        pass
-    finally:
         if user is not None:
             await user.set_online(False)
