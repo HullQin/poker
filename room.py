@@ -42,6 +42,11 @@ class User:
             from server import send_data as origin_send_data
             await origin_send_data(self.send, data)
 
+    async def send_message(self, *args, **kwargs):
+        from server import send_message
+        if self.online:
+            await send_message(self.send, *args, **kwargs)
+
     def to_dict(self):
         # 为了私密性，用户id不会传输，只传输座位号
         return {
@@ -82,6 +87,7 @@ class Room:
             if self.state == 0:
                 del self.users[user.id]
                 if len(self.users) == 0:
+                    # 房间没人了，不需要通知
                     self.creator = None
                 else:
                     if self.creator.id == user.id:
@@ -99,23 +105,31 @@ class Room:
         else:
             del self.users[user.id]
 
-    async def add_user(self, user):
+    async def add_user(self, user, chosen_seat=None):
         if self.state == 999:
             return
         seats = self.seats
         if self.state == 0 and 0 < len(seats) < self.max_seats:
-            for i in range(1, self.max_seats + 1):
-                if i not in seats:
-                    user.seat = i
-                    break
+            if chosen_seat is not None:
+                user.seat = chosen_seat
+            else:
+                for i in range(1, self.max_seats + 1):
+                    if i not in seats:
+                        user.seat = i
+                        break
             self.users[user.id] = user
-            await self.send_all({'type': 'room.user.join', 'seat': user.seat}, exclude_user_id=user.id)
+            await self.send_all({'type': 'room.user.join', 'seat': user.seat, 'user': user.to_dict()}, exclude_user_id=user.id)
         elif self.state == 0 and len(seats) == 0:
-            user.seat = 1
+            user.seat = chosen_seat or 1
             self.users[user.id] = user
-            await self.send_all({'type': 'room.user.join', 'seat': user.seat, 'creator': user.seat}, exclude_user_id=user.id)
+            await self.send_all({'type': 'room.user.join', 'seat': user.seat, 'user': user.to_dict(), 'creator': user.seat}, exclude_user_id=user.id)
         else:
             self.add_visitor(user)
+
+    async def change_user_seat(self, user, new_seat):
+
+        old_seat = user.seat
+        user.seat = new_seat
 
     async def start_game(self):
         if self.state == 0:
@@ -161,7 +175,7 @@ class Room:
         return {
             'id': self.id,
             'creator': self.creator and self.creator.seat,
-            'players': [self[i] and self[i].to_dict() for i in range(1, self.max_seats + 1)],
+            'players': [self[i].to_dict() if self[i] is not None else None for i in range(1, self.max_seats + 1)],
             'state': self.state,
             'max_seats': self.max_seats,
         }

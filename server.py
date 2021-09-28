@@ -100,9 +100,28 @@ async def handle_user_start_game(data, user, room):
     await room.start_game()
 
 
+async def handle_user_seat_change(data, user, room):
+    if user.seat == data.seat:
+        return
+    if room.state != 0:
+        await user.send_message('游戏已开始，不能切换座位')
+    elif data.seat is None:
+        await room.remove_user(user)
+        await room.add_visitor(user)
+    elif room.users[data.seat] is not None:
+        await user.send_message(f'位置{data.seat}已经被抢了')
+    elif user.seat is None:
+        await room.add_user(user, data.seat)
+    else:
+        old_seat = user.seat
+        user.seat = data.seat
+        await room.send_all({'type': 'room.user.seat', 'old_seat': old_seat, 'new_seat': user.seat})
+
+
 handler = {
     'server.close': handle_server_close,
     'user.start.game': handle_user_start_game,
+    'user.seat.change': handle_user_seat_change,
 }
 
 memory_leak_detector = WeakSet()
