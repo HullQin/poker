@@ -13,12 +13,10 @@
   pointer-events: none;
   text-align: center;
 }
-
 #message > div {
   padding: 6px;
   transition: margin-top .5s linear;
 }
-
 #message > div > div {
   display: inline-block;
   padding: 12px 18px;
