@@ -230,7 +230,7 @@ class Game:
         if self.room.mode == 2:
             cards = [i for i in range(1, 109)]
             random.shuffle(cards)
-            for i in range(1, 4):
+            for i in range(1, 5):
                 self.player_cards[i].extend(cards[(i - 1) * 25:i * 25])
             self.revealed.extend(cards[100:])
 
