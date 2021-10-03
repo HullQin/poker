@@ -240,6 +240,8 @@ class Game:
         self.used.clear()
         for cards in self.player_cards:
             cards.clear()
+        for last in self.last:
+            last.clear()
         self.deliver_cards()
         await self.send_game_data({'type': 'game.reset'})
 
