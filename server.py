@@ -2,6 +2,7 @@ from _weakrefset import WeakSet
 from error import *
 from room import Room, User
 from asyncio import QueueEmpty
+import hashlib
 import json
 import os
 
@@ -181,7 +182,9 @@ handler = {
 memory_leak_detector = WeakSet()
 files = {}
 STATIC = os.path.join(os.path.dirname(__file__), 'static')
-DEBUG = False
+with open(os.path.join(STATIC, 'index.html'), 'rb') as f:
+    files['index.html'] = f.read()
+    INDEX_HTML_MD5 = hashlib.md5(files['index.html']).hexdigest().encode()
 
 
 async def application(scope, receive, send):
@@ -192,7 +195,7 @@ async def application(scope, receive, send):
                     path = scope['path'][1:]
                 else:
                     path = 'index.html'
-                if not DEBUG and path in files:
+                if path in files:
                     body = files[path]
                 else:
                     filepath = os.path.join(STATIC, path)
@@ -204,7 +207,12 @@ async def application(scope, receive, send):
                         body = None
                 if body is not None:
                     if path == 'index.html':
-                        headers = []
+                        headers = [(b'Cache-Control', b'no-cache'), (b'ETag', INDEX_HTML_MD5)]
+                        for key, value in scope['headers']:
+                            if key == b'if-none-match' and value == INDEX_HTML_MD5:
+                                await send({'type': 'http.response.start', 'status': 304, 'headers': headers})
+                                await send({'type': 'http.response.body'})
+                                return
                     else:
                         headers = [(b'Cache-Control', b'max-age=31536000')]
                     await send({'type': 'http.response.start', 'status': 200, 'headers': headers})
