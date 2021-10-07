@@ -216,6 +216,7 @@ class Game:
         self.player_number = room.max_seats
         self.landlord = None
         self.order = []
+        self.turn = None
         for i in range(self.player_number):
             self.player_cards.append([])
             self.last.append([])
@@ -254,22 +255,36 @@ class Game:
     async def call_landlord(self, user):
         self.state = 2
         self.landlord = user.seat
+        self.turn = user.seat
         self.player_cards[user.seat].extend(self.revealed)
         await self.send_game_data({'type': 'game.landlord', 'seat': user.seat})
 
     async def drop_card(self, user, cards):
+        if self.state != 2:
+            return
+        if self.turn != user.seat:
+            await user.send_message('还不该您出牌')
+            return
         for card in cards:
             if card in self.used or card not in self.player_cards[user.seat]:
-                user.send_message('数据不同步，请刷新页面')
+                await user.send_message('数据不同步，请刷新页面')
                 return
         self.used.extend(cards)
         self.last[user.seat] = [*cards]
         for card in cards:
             self.player_cards[user.seat].remove(card)
         self.order.append(user.seat)
+        self.turn += 1
+        if self.turn > self.player_number:
+            self.turn -= self.player_number
         await self.send_game_data({'type': 'game.drop.card', 'seat': user.seat, 'cards': cards})
 
     async def withdraw_card(self, user):
+        if self.state != 2:
+            return
+        if self.turn - 1 != user.seat % self.player_number:
+            await user.send_message('下一位已经出牌，您不能收回')
+            return
         cards = self.last[user.seat]
         for card in cards:
             self.used.remove(card)
@@ -282,6 +297,7 @@ class Game:
                 break
         if j is not None:
             del self.order[j]
+        self.turn = user.seat
         await self.send_game_data({'type': 'game.withdraw.card', 'seat': user.seat})
 
     def to_dict(self, user):
@@ -295,4 +311,5 @@ class Game:
             'my': self.player_cards[user.seat] if user.seat is not None else [],
             'landlord': self.landlord,
             'top': self.order[-1] if len(self.order) > 0 else None,
+            'turn': self.turn,
         }
