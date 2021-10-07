@@ -215,6 +215,7 @@ class Game:
         self.last = [[]]
         self.player_number = room.max_seats
         self.landlord = None
+        self.order = []
         for i in range(self.player_number):
             self.player_cards.append([])
             self.last.append([])
@@ -265,6 +266,7 @@ class Game:
         self.last[user.seat] = [*cards]
         for card in cards:
             self.player_cards[user.seat].remove(card)
+        self.order.append(user.seat)
         await self.send_game_data({'type': 'game.drop.card', 'seat': user.seat, 'cards': cards})
 
     async def withdraw_card(self, user):
@@ -273,6 +275,13 @@ class Game:
             self.used.remove(card)
         self.player_cards[user.seat].extend(cards)
         self.last[user.seat] = []
+        j = None
+        for i in range(len(self.order)):
+            j = len(self.order) - i - 1
+            if self.order[j] == user.seat:
+                break
+        if j is not None:
+            del self.order[j]
         await self.send_game_data({'type': 'game.withdraw.card', 'seat': user.seat})
 
     def to_dict(self, user):
@@ -285,4 +294,5 @@ class Game:
             'revealed': [] if self.state <= 1 else self.revealed,
             'my': self.player_cards[user.seat] if user.seat is not None else [],
             'landlord': self.landlord,
+            'top': self.order[-1] if len(self.order) > 0 else None,
         }
