@@ -9,6 +9,12 @@
 
 这是后端仓库，前端仓库位于 https://github.com/HullQin/poker_fe
 
+## 部署方法
+
+1. 在前端代码仓库执行`yarn`和`yarn build`，得到产物`build/*`。
+2. 前端产物`build/*`放在后端代码仓库的`static/*`下。
+3. 参考Dockerfile启动后端服务后，浏览器访问后端的端口即可。
+
 ## 体验地址
 
 https://game.hullqin.cn/ddz
@@ -19,6 +25,6 @@ https://game.hullqin.cn/ddz
 
 欢迎关注"线下聚会游戏"公众号，我会做更多**没广告的纯粹的**小游戏。
 
-之后也会分享其中的技术，以及分享如何做个联机对战小游戏。
+之后也会分享其中的技术，以及分享如何做个联机对战小游戏。欢迎关注我的掘金账号: [HullQin - 掘金](https://juejin.cn/user/615367094054285/posts)
 
 ![公众号"线下聚会游戏"](qrcode.jpg)
