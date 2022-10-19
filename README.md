@@ -12,8 +12,8 @@
 ## 部署方法
 
 1. 在前端代码仓库执行`yarn`和`yarn build`，得到产物`build/*`。
-2. 前端产物`build/*`放在后端代码仓库的`static/*`下。
-3. 参考Dockerfile启动后端服务后，浏览器访问后端的端口即可。
+2. 前端产物`build/*`放在后端代码仓库的`static/*`下(后端仓库没创建这个文件夹，需要手动新建文件夹static，再把内容复制过来，例如static/index.html)。
+3. 参考Dockerfile启动后端服务后，浏览器访问后端的端口即可。如果不懂Docker也没关系，安装好python依赖后，启动服务的命令是`daphne -b 0.0.0.0 -p 8000 server:application`，需要在项目根目录执行，其中8000就是运行的端口，你可以修改。
 
 ## 体验地址
 
